@@ -1,4 +1,4 @@
-* Machine Learning Engineer Take-Home
+# Machine Learning Engineer Take-Home
 
 The following is a take-home coding exercise. You will have 24 hours to complete
 it, though we expect it will take considerably less time.
@@ -9,7 +9,7 @@ or other data science sites, WILL BE IMMEDIATELY REJECTED with no exceptions.
 We recommend citing API sources just to avoid confusion. 
 Also cite any git repos, including your own, that you have used. 
 
-** Description
+## Description
 Part of what gives Kabbage an edge over its competitors is the ability to
 quickly qualify customers for a loan. To that end, Kabbage maintains web 
 services that can score a customer against one of myriad models.
@@ -37,10 +37,11 @@ Whether you have enough time to address all of these in code or not, your
 solution should include a README.md that addresses these concerns.
 
 
-** Raw Data Format:
+## Raw Data Format:
 
 You will be given raw data for each customer that includes information used
 in the scoring request. The scoring request's raw data looks like the following:
+```
 {
     "UserID":  "12345678-1234-5678-1234-567812345678",
     "CurrentBalance":  42.82,
@@ -60,7 +61,7 @@ in the scoring request. The scoring request's raw data looks like the following:
         }
     ]
 }
-
+```
 The fields have the following meaning:
 - UserID: a unique string for the user being scored;
 - CurrentBalance: the user's account balance at the end of the interval;
@@ -77,7 +78,7 @@ The fields have the following meaning:
                 the same date, the credits are processed before the debits.
 
 
-** Model Prediction
+## Model Prediction
 
 The model has been written in Python and has been saved as a pickled object in
 the file "sample_model.pkl.gz" (which you will need to unzip). It is a scikit-learn 
@@ -97,7 +98,7 @@ The "predict" method returns a two-element list:
 - entry 1 is the probability that the user will default.
 
 
-** Deliverables
+## Deliverables
 Your package should include the following:
 - the web service's code, in the language of your choice;
 - any tests that are external to the service itself;
@@ -105,7 +106,7 @@ Your package should include the following:
   and how to run tests, if any.
 
 
-** What does a great submission look like?
+## What does a great submission look like?
 - The REST API has a rationale to it and is easy to understand.
 - The web service describes how to handle load, including how to handle
   simultaneous requests.
