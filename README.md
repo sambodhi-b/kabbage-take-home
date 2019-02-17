@@ -10,10 +10,10 @@
 ## Work Tracker
 ### Done:
 1. Initial Analysis and Resolution of Issues Encountered
+2. Set up logic to convert input raw data to feature set
+3. Unit Tests
 
 ### To Do:
-- Set up logic to convert input raw data to feature set
-- Unit Tests
 
 ### Backlog:
 - Design REST API endpoint(s)
