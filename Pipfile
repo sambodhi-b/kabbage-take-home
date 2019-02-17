@@ -7,9 +7,12 @@ verify_ssl = true
 jupyter = "*"
 pylint = "*"
 autopep8 = "*"
+pep8 = "*"
+pytest = "*"
 
 [packages]
 scikit-learn = "*"
+pandas = "*"
 
 [requires]
 python_version = "2.7"
