@@ -2,12 +2,14 @@ import json
 import pandas as pd
 import datetime as dt
 from sklearn.externals import joblib
+from flask import Flask, request, abort, jsonify, make_response
 
 
 def _get_date_only(input_datetime=dt.datetime.today()):
     return (input_datetime
             .replace(hour=0, minute=0, second=0,
                      microsecond=0, tzinfo=None))
+
 
 def _float_to_dollar(input_float):
     return float("%.2f" % input_float)
@@ -25,7 +27,8 @@ def raw_data_to_feature_tuple(raw_data_json):
 
     # Adding in the simple components (Current Balance and FICO Score)
     try:
-        result_json['current_balance'] = _float_to_dollar(raw_data_json['CurrentBalance'])
+        result_json['current_balance'] = _float_to_dollar(
+            raw_data_json['CurrentBalance'])
         result_json['fico_score'] = raw_data_json['FICOScore']
     except Exception:
         raise KeyError
@@ -33,8 +36,10 @@ def raw_data_to_feature_tuple(raw_data_json):
     # Checking if Transactions Exist. If not, return appropriate json
     if len(raw_data_json['Transactions']) == 0:
         try:
-            result_json['max_bal_l30'] = _float_to_dollar(raw_data_json['CurrentBalance'])
-            result_json['min_bal_l30'] = _float_to_dollar(raw_data_json['CurrentBalance'])
+            result_json['max_bal_l30'] = _float_to_dollar(
+                raw_data_json['CurrentBalance'])
+            result_json['min_bal_l30'] = _float_to_dollar(
+                raw_data_json['CurrentBalance'])
         except Exception:
             raise KeyError
         result_json['sum_debit_l30'] = 0
@@ -69,7 +74,7 @@ def raw_data_to_feature_tuple(raw_data_json):
             .loc[category_debits.Amount.idxmax(), 'Category'])
     except ValueError:
         result_json['catg_max_debits'] = "None"
-    
+
     # Filtering Down to Last 30 Days with Entries for each day
     last_30_days = pd.DataFrame(
         data=[_get_date_only() - dt.timedelta(days=date_offset)
@@ -83,8 +88,10 @@ def raw_data_to_feature_tuple(raw_data_json):
     # Checking for Transactions in Last 30 Days. If none, set appropriate result
     if all(pd.isna(balance_df_l30.Type)):
         try:
-            result_json['max_bal_l30'] = _float_to_dollar(raw_data_json['CurrentBalance'])
-            result_json['min_bal_l30'] = _float_to_dollar(raw_data_json['CurrentBalance'])
+            result_json['max_bal_l30'] = _float_to_dollar(
+                raw_data_json['CurrentBalance'])
+            result_json['min_bal_l30'] = _float_to_dollar(
+                raw_data_json['CurrentBalance'])
         except Exception:
             raise KeyError
         result_json['sum_debit_l30'] = 0
@@ -103,7 +110,8 @@ def raw_data_to_feature_tuple(raw_data_json):
                other=(-balance_df_l30.Amount)))
 
     # Creating Account Balance assuming initial Zero Balance
-    balance_df_l30['cum_sum_amount'] = balance_df_l30.Signed_Amount.fillna(0).cumsum()
+    balance_df_l30['cum_sum_amount'] = balance_df_l30.Signed_Amount.fillna(
+        0).cumsum()
 
     # Calculating Initial Balance based on
     # Gap between Final CumSum and Current Balance
@@ -116,25 +124,29 @@ def raw_data_to_feature_tuple(raw_data_json):
 
     # Calculating Correct Balance
     balance_df_l30['balance_amount'] = (balance_df_l30['cum_sum_amount'] +
-                                             initial_balance)
+                                        initial_balance)
 
     # Maximum Balance Over Last 30 Days
-    result_json['max_bal_l30'] = _float_to_dollar(balance_df_l30.balance_amount.max())
+    result_json['max_bal_l30'] = _float_to_dollar(
+        balance_df_l30.balance_amount.max())
 
     # Minimum Balance Over Last 30 Days
-    result_json['min_bal_l30'] = _float_to_dollar(balance_df_l30.balance_amount.min())
+    result_json['min_bal_l30'] = _float_to_dollar(
+        balance_df_l30.balance_amount.min())
 
     # Sum of Debits and Credits over Last 30 Days
     debits_and_credits = (
         balance_df_l30[['Type', 'Amount']]
         .groupby('Type').sum())
     try:
-        result_json['sum_debit_l30'] = _float_to_dollar(debits_and_credits.loc['debit', 'Amount'])
+        result_json['sum_debit_l30'] = _float_to_dollar(
+            debits_and_credits.loc['debit', 'Amount'])
     except KeyError:
         result_json['sum_debit_l30'] = 0
 
     try:
-        result_json['sum_credit_l30'] = _float_to_dollar(debits_and_credits.loc['credit', 'Amount'])
+        result_json['sum_credit_l30'] = _float_to_dollar(
+            debits_and_credits.loc['credit', 'Amount'])
     except KeyError:
         result_json['sum_credit_l30'] = 0
 
@@ -152,8 +164,8 @@ def generate_prediction(raw_data_json):
     # # FICO score. fico_score
 
     feature_json = raw_data_to_feature_tuple(raw_data_json)
-    
-    encoding_pipeline = joblib.load("../resources/encoder_pipeline.pkl")
+
+    encoding_pipeline = joblib.load("solution/app/resources/encoder_pipeline.pkl")
 
     encoded_features = encoding_pipeline.fit_transform([[
         feature_json['current_balance'],
@@ -163,11 +175,80 @@ def generate_prediction(raw_data_json):
         feature_json['sum_credit_l30'],
         feature_json['catg_max_debits'],
         feature_json['fico_score']
-    ],])
+    ], ])
 
-    prediction_pipeline = joblib.load("../resources/model_pipeline.pkl")
+    prediction_pipeline = joblib.load("solution/app/resources/model_pipeline.pkl")
 
-    predictions = prediction_pipeline.predict(encoded_features)
+    prediction = prediction_pipeline.predict(encoded_features)[0]
 
-    return predictions
+    response = {'prediction': str(prediction)}
 
+    return response
+
+
+# Creating Flask Instance
+app = Flask(__name__)
+
+
+# Creating a Bad Request Handler
+def bad_request(message, include_body_sample=True):
+    body_sample = {
+        "UserID":  "12345678-1234-5678-1234-567812345678",
+        "CurrentBalance":  42.82,
+        "FICOScore": 682,
+        "Transactions": [
+            {"TransactionID": "ABCDEF12-3456-78AB-CDEF12345678",
+             "Amount":        123.45,
+             "Category":      "Entertainment",
+             "Type":          "debit",
+             "PostDate":      "2018-06-01"
+             },
+            {"TransactionID": "9ABCDEF0-1234-5678-9ABCDEF012345",
+             "Amount":        2048.64,
+             "Category":      "Deposits",
+             "Type":          "credit",
+             "PostDate":      "2018-06-02"
+             }
+        ]
+    }
+
+    response_json = {'error_code': 400,
+                     'error_message': message}
+
+    if include_body_sample:
+        response_json['body_sample'] = body_sample
+
+    response = jsonify(response_json)
+    return abort(make_response((response, 400, [])))
+
+# Creating End Point
+@app.route('/predictions', methods=['POST'])
+def main():
+    if not request.json:
+        return bad_request("Please add Data JSON to request Body")
+
+    request_json = request.get_json(force=True, silent=True)
+
+    if not request_json.get('CurrentBalance'):
+        return bad_request("CurrentBalance is missing from Body")
+
+    if not request_json.get('FICOScore'):
+        return bad_request("FICOScore is missing from Body")
+
+    if (not request_json.get('Transactions')) and (request_json.get('Transactions') != []):
+        return bad_request("Transactions is missing from Body. If there are no transactions, add an empty element")
+
+    if not isinstance(request_json.get('Transactions'), list):
+        return bad_request("Transactions needs to be a list element")
+
+    try:
+        predictions = generate_prediction(request.json)
+    except Exception as e:
+        print str(e)
+        return bad_request("Generating Predictions Failed", include_body_sample=False)
+
+    return jsonify(predictions)
+
+
+if __name__ == '__main__':
+    app.run(debug=False)
