@@ -12,12 +12,12 @@
 1. Initial Analysis and Resolution of Issues Encountered
 2. Set up logic to convert input raw data to feature set
 3. Unit Tests
+4. Design REST API endpoint(s)
+5. Set-up Web Service
+6. Containerize
 
 ### To Do:
 
 ### Backlog:
-- Design REST API endpoint(s)
-- Set-up Web Service
-- Containerize
 - Set-up CI Pipeline
 - Deploy to Kubernetes
