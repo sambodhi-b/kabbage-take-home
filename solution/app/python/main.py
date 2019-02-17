@@ -181,7 +181,7 @@ def generate_prediction(raw_data_json):
 
     prediction = prediction_pipeline.predict(encoded_features)[0]
 
-    response = {'prediction': str(prediction)}
+    response = str(prediction)
 
     return response
 
@@ -221,14 +221,8 @@ def bad_request(message, include_body_sample=True):
     response = jsonify(response_json)
     return abort(make_response((response, 400, [])))
 
-# Creating End Point
-@app.route('/predictions', methods=['POST'])
-def main():
-    if not request.json:
-        return bad_request("Please add Data JSON to request Body")
 
-    request_json = request.get_json(force=True, silent=True)
-
+def process_request(request_json):
     if not request_json.get('CurrentBalance'):
         return bad_request("CurrentBalance is missing from Body")
 
@@ -242,12 +236,28 @@ def main():
         return bad_request("Transactions needs to be a list element")
 
     try:
-        predictions = generate_prediction(request.json)
+        prediction = generate_prediction(request_json)
     except Exception as e:
         print str(e)
         return bad_request("Generating Predictions Failed", include_body_sample=False)
 
-    return jsonify(predictions)
+    return {"UserID": request_json.get('UserID'), 'prediction': prediction}
+
+# Creating End Point
+@app.route('/predictions', methods=['POST'])
+def main():
+    if not request.json:
+        return bad_request("Please add Data JSON to request Body")
+
+    request_json = request.get_json(force=True, silent=True)
+
+    # If it is a single request
+    if isinstance(request_json, dict):
+        return jsonify(process_request(request_json))
+    # If there are multiple Requests
+    elif isinstance(request_json, list):
+        responses = [process_request(req_json) for req_json in request_json]
+        return jsonify(responses)
 
 
 if __name__ == '__main__':
