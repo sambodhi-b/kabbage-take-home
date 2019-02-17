@@ -1,0 +1,55 @@
+[{
+    "CurrentBalance": 42.82,
+    "FICOScore": 682,
+    "Transactions": [
+        {
+            "Amount": 123.45,
+            "Category": "Entertainment",
+            "PostDate": "2019-02-01",
+            "TransactionID": "ABCDEF12-3456-78AB-CDEF12345678",
+            "Type": "debit"
+        },
+        {
+            "Amount": 2048.64,
+            "Category": "Deposits",
+            "PostDate": "2019-02-05",
+            "TransactionID": "9ABCDEF0-1234-5678-9ABCDEF012345",
+            "Type": "credit"
+        }
+    ],
+    "UserID": "12345678-1234-5678-1234-567812345678"
+},{
+    "UserID": "256367de-d0b1-4864-90c8-2be1ff81b33f",
+    "CurrentBalance": 9270.02,
+    "FICOScore": 476,
+    "Transactions": [
+        {
+            "TransactionID": "edaaebb5-40a1-40e5-b286-86efe90b5336",
+            "Amount": 123.45,
+            "Category": "Entertainment",
+            "Type": "debit",
+            "PostDate": "2019-01-12"
+        },
+        {
+            "TransactionID": "9ABCDEF0-1234-5678-9ABCDEF012345",
+            "Amount": 2048.64,
+            "Category": "XXX-03",
+            "Type": "debit",
+            "PostDate": "2019-01-30"
+        },
+        {
+            "TransactionID": "ABCDEF12-1234-5678-9ABCDEF012345",
+            "Amount": 121.11,
+            "Category": "Deposits",
+            "Type": "credit",
+            "PostDate": "2019-01-30"
+        },
+        {
+            "TransactionID": "ABCDEF12-1234-78AB-9ABCDEF012345",
+            "Amount": 127.34,
+            "Category": "XXX-44",
+            "Type": "debit",
+            "PostDate": "2019-02-15"
+        }
+    ]
+}]
