@@ -1,6 +1,7 @@
 import json
 import pandas as pd
 import datetime as dt
+from sklearn.externals import joblib
 
 
 def _get_date_only(input_datetime=dt.datetime.today()):
@@ -13,13 +14,6 @@ def _float_to_dollar(input_float):
 
 
 def raw_data_to_feature_tuple(raw_data_json):
-    # # current balance;
-    # # maximum balance over last 30 days;
-    # # minimum balance over last 30 days;
-    # # sum of debits over last 30 days;
-    # # sum of credits over last 30 days;
-    # - category which had maximum debits (or the string "None" if there were no debits);
-    # # FICO score.
 
     # Note on Code Style
     # We will be following the Early Exit (Return) Strategy here as
@@ -30,27 +24,38 @@ def raw_data_to_feature_tuple(raw_data_json):
     result_json = {}
 
     # Adding in the simple components (Current Balance and FICO Score)
-    # TODO Exception Handling
-    result_json['current_balance'] = _float_to_dollar(raw_data_json['CurrentBalance'])
-    result_json['fico_score'] = raw_data_json['FICOScore']
+    try:
+        result_json['current_balance'] = _float_to_dollar(raw_data_json['CurrentBalance'])
+        result_json['fico_score'] = raw_data_json['FICOScore']
+    except Exception:
+        raise KeyError
 
     # Checking if Transactions Exist. If not, return appropriate json
     if len(raw_data_json['Transactions']) == 0:
-        result_json['max_bal_l30'] = _float_to_dollar(raw_data_json['CurrentBalance'])
-        result_json['min_bal_l30'] = _float_to_dollar(raw_data_json['CurrentBalance'])
+        try:
+            result_json['max_bal_l30'] = _float_to_dollar(raw_data_json['CurrentBalance'])
+            result_json['min_bal_l30'] = _float_to_dollar(raw_data_json['CurrentBalance'])
+        except Exception:
+            raise KeyError
         result_json['sum_debit_l30'] = 0
         result_json['sum_credit_l30'] = 0
         result_json['catg_max_debits'] = 'None'
         return result_json
 
     # Picking up the Transactions as a Pandas DataFrame if Exists
-    transactions_df = pd.DataFrame.from_records(
-        data=raw_data_json['Transactions'],
-        exclude=["TransactionID"])
+    try:
+        transactions_df = pd.DataFrame.from_records(
+            data=raw_data_json['Transactions'],
+            exclude=["TransactionID"])
+    except Exception:
+        raise KeyError
 
     # Converting Type to lowercase
-    transactions_df.PostDate = pd.to_datetime(transactions_df.PostDate)
-    transactions_df.Type = transactions_df.Type.str.lower()
+    try:
+        transactions_df.PostDate = pd.to_datetime(transactions_df.PostDate)
+        transactions_df.Type = transactions_df.Type.str.lower()
+    except Exception:
+        raise KeyError
 
     # Category with Maximum Debits
     category_debits = (
@@ -77,8 +82,11 @@ def raw_data_to_feature_tuple(raw_data_json):
 
     # Checking for Transactions in Last 30 Days. If none, set appropriate result
     if all(pd.isna(balance_df_l30.Type)):
-        result_json['max_bal_l30'] = _float_to_dollar(raw_data_json['CurrentBalance'])
-        result_json['min_bal_l30'] = _float_to_dollar(raw_data_json['CurrentBalance'])
+        try:
+            result_json['max_bal_l30'] = _float_to_dollar(raw_data_json['CurrentBalance'])
+            result_json['min_bal_l30'] = _float_to_dollar(raw_data_json['CurrentBalance'])
+        except Exception:
+            raise KeyError
         result_json['sum_debit_l30'] = 0
         result_json['sum_credit_l30'] = 0
         return result_json
@@ -132,3 +140,34 @@ def raw_data_to_feature_tuple(raw_data_json):
 
     # Results!
     return result_json
+
+
+def generate_prediction(raw_data_json):
+    # # current balance; current_balance
+    # # maximum balance over last 30 days; max_bal_l30
+    # # minimum balance over last 30 days; min_bal_l30
+    # # sum of debits over last 30 days; sum_debit_l30
+    # # sum of credits over last 30 days; sum_credit_l30
+    # # category which had maximum debits (or the string "None" if there were no debits); catg_max_debits
+    # # FICO score. fico_score
+
+    feature_json = raw_data_to_feature_tuple(raw_data_json)
+    
+    encoding_pipeline = joblib.load("../resources/encoder_pipeline.pkl")
+
+    encoded_features = encoding_pipeline.fit_transform([[
+        feature_json['current_balance'],
+        feature_json['max_bal_l30'],
+        feature_json['min_bal_l30'],
+        feature_json['sum_debit_l30'],
+        feature_json['sum_credit_l30'],
+        feature_json['catg_max_debits'],
+        feature_json['fico_score']
+    ],])
+
+    prediction_pipeline = joblib.load("../resources/model_pipeline.pkl")
+
+    predictions = prediction_pipeline.predict(encoded_features)
+
+    return predictions
+
