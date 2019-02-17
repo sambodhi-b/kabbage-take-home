@@ -1,0 +1,9 @@
+# To Build Image from Docker FIle
+docker build -t sambodhi/kabbage_take_home:latest .
+
+# To Push to Docker Hub
+docker push sambodhi/kabbage_take_home:latest
+
+
+# To Run container out of Docker Hub Image
+docker run -d --name kabbage_take_home_predictor -p 5000:5000 sambodhi/kabbage_take_home:latest
