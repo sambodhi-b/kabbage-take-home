@@ -165,7 +165,7 @@ def generate_prediction(raw_data_json):
 
     feature_json = raw_data_to_feature_tuple(raw_data_json)
 
-    encoding_pipeline = joblib.load("solution/app/resources/encoder_pipeline.pkl")
+    encoding_pipeline = joblib.load("resources/encoder_pipeline.pkl")
 
     encoded_features = encoding_pipeline.fit_transform([[
         feature_json['current_balance'],
@@ -177,7 +177,7 @@ def generate_prediction(raw_data_json):
         feature_json['fico_score']
     ], ])
 
-    prediction_pipeline = joblib.load("solution/app/resources/model_pipeline.pkl")
+    prediction_pipeline = joblib.load("resources/model_pipeline.pkl")
 
     prediction = prediction_pipeline.predict(encoded_features)[0]
 
