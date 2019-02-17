@@ -95,7 +95,7 @@ def test_raw_data_to_feature_tuple_with_no_current_balance():
         ]
     }
 
-    with pytest.raises(KeyError) as e:
+    with pytest.raises(KeyError):
         raw_data_to_feature_tuple(input_json)
 
 
@@ -140,7 +140,7 @@ def test_raw_data_to_feature_tuple_with_no_fico_score():
         ]
     }
 
-    with pytest.raises(KeyError) as e:
+    with pytest.raises(KeyError):
         raw_data_to_feature_tuple(input_json)
 
 
